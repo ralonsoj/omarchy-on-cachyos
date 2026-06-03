@@ -34,13 +34,31 @@ fi
 # plus matching hybrid profiles for Optimus laptops.
 NVIDIA_DRIVER=$(pacman -Qq 2>/dev/null | grep -E '^nvidia(-open)?(-470xx|-390xx)?(-dkms)?$' | head -n1 || true)
 
+if [[ -z "$NVIDIA_DRIVER" ]] && lsmod 2>/dev/null | grep -q '^nvidia'; then
+    echo "[*] NVIDIA kernel module already loaded — assuming driver provided by CachyOS kernel package."
+    NVIDIA_DRIVER="nvidia-dkms"
+fi
+
 if [[ -z "$NVIDIA_DRIVER" ]]; then
     echo "[!] No NVIDIA driver detected — running CachyOS chwd auto-detection..."
     sudo chwd -a || echo "[!] chwd returned non-zero; continuing."
     NVIDIA_DRIVER=$(pacman -Qq 2>/dev/null | grep -E '^nvidia(-open)?(-470xx|-390xx)?(-dkms)?$' | head -n1 || true)
+
+    # Fallback: chwd db can lag behind newer / niche cards. Install the
+    # current proprietary DKMS driver directly. Maxwell+ (Quadro M/P series,
+    # GTX 9xx/10xx/16xx, RTX 20xx+) all use nvidia-dkms.
     if [[ -z "$NVIDIA_DRIVER" ]]; then
-        echo "[!] Warning: chwd did not install an NVIDIA driver package."
-        echo "    You may need to run 'chwd -l' and pick a profile manually."
+        echo "[!] chwd did not install a driver — falling back to pacman -S nvidia-dkms."
+        sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils
+        NVIDIA_DRIVER=$(pacman -Qq 2>/dev/null | grep -E '^nvidia(-open)?(-470xx|-390xx)?(-dkms)?$' | head -n1 || true)
+    fi
+
+    if [[ -z "$NVIDIA_DRIVER" ]]; then
+        echo "[!] Warning: still no NVIDIA driver installed."
+        echo "    Run 'chwd -l' to inspect profiles, or install manually:"
+        echo "      Kepler   → yay -S nvidia-470xx-dkms nvidia-470xx-utils"
+        echo "      Fermi    → yay -S nvidia-390xx-dkms nvidia-390xx-utils"
+        echo "      Maxwell+ → sudo pacman -S nvidia-dkms nvidia-utils"
     fi
 fi
 
