@@ -2,7 +2,7 @@
 
 # Target destination (relative to this script's location)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="$SCRIPT_DIR/../../omarchy"
+TARGET_DIR="$SCRIPT_DIR/../omarchy"
 REPO_URL="https://github.com/basecamp/omarchy"
 
 # Fetch available stable version tags from the remote repository cleanly
